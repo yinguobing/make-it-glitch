@@ -134,21 +134,21 @@ int main(int argc, char** argv)
         nullptr,
         nullptr);
     if (sws_ctx == nullptr) {
-        std::cerr << "SWS context init error." << std::endl;
+        std::cerr << "Cannot init SWS context." << std::endl;
         return -1;
     }
 
     // Allocate frames: raw frame in system memory
-    AVFrame* frame_raw = nullptr;
+    AVFrame* frame_yuv = nullptr;
 
     // Allocate frames: raw frame in HW memory
-    AVFrame* frame_yuv = nullptr;
+    AVFrame* frame_raw = nullptr;
 
     // Allocate frames: converted color frame
     AVFrame* frame_bgr = nullptr;
 
     if (!(frame_raw = av_frame_alloc()) or !(frame_bgr = av_frame_alloc()) or !(frame_yuv = av_frame_alloc())) {
-        std::cerr << "Cannot allocate frame for yuv image." << std::endl;
+        std::cerr << "Cannot allocate frames." << std::endl;
         return AVERROR(ENOMEM);
     }
 
@@ -157,7 +157,7 @@ int main(int argc, char** argv)
     frame_bgr->width = decode_context->width;
     frame_bgr->height = decode_context->height;
     if (av_frame_get_buffer(frame_bgr, 0) < 0) {
-        std::cerr << "Cannot get SWS frame." << std::endl;
+        std::cerr << "Cannot alocate SWS frame buffer." << std::endl;
         return -1;
     }
 
@@ -168,7 +168,7 @@ int main(int argc, char** argv)
     // Init the packet
     AVPacket* packet = nullptr;
     if (!(packet = av_packet_alloc())) {
-        std::cerr << "Cannot alloc packet." << std::endl;
+        std::cerr << "Cannot allocate packet." << std::endl;
         return -1;
     }
 
