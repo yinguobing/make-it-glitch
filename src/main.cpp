@@ -46,7 +46,7 @@ int main(int argc, char** argv)
 
     // Is there any valid video stream to be processed?
     AVStream* stream;
-    AVCodec* decoder;
+    const AVCodec* decoder;
     int stream_index;
     if ((stream_index = av_find_best_stream(format_context, AVMEDIA_TYPE_VIDEO, -1, -1, &decoder, 0)) < 0) {
         std::cerr << "Cannot find valid stream: " << av_get_media_type_string(AVMEDIA_TYPE_VIDEO) << std::endl;
@@ -120,8 +120,6 @@ int main(int argc, char** argv)
         std::cerr << "Cannot open decoder for stream: " << stream_index << std::endl;
         return ret;
     }
-    std::cout << "Decoded pixel format: " << av_get_pix_fmt_name(decode_context->pix_fmt) << std::endl;
-    std::cout << "Decoded pixel format: " << av_get_pix_fmt_name(AV_PIX_FMT_NV12) << std::endl;
 
     // Create SWS Context for converting from decode pixel format (like YUV420) to BGR
     SwsContext *sws_ctx = nullptr, *cached_ctx = nullptr;
