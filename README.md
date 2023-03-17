@@ -1,6 +1,8 @@
 # make-it-glitch
 Minimal C++ code for generating glitchy video with FFMPEG.
 
+![Sample - The Wandering Earth 2](doc/wandering_earch_2.jpg)
+
 All these features implemented with only ~200 lines of C++ code.
 - Support most video files
 - Automatic hardware acceleration
