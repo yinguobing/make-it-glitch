@@ -46,7 +46,7 @@ int main(int argc, char** argv)
 
     // Is there any valid video stream to be processed?
     AVStream* stream;
-    const AVCodec* decoder;
+    AVCodec* decoder;
     int stream_index;
     if ((stream_index = av_find_best_stream(format_context, AVMEDIA_TYPE_VIDEO, -1, -1, &decoder, 0)) < 0) {
         std::cerr << "Cannot find valid stream: " << av_get_media_type_string(AVMEDIA_TYPE_VIDEO) << std::endl;
@@ -157,7 +157,7 @@ int main(int argc, char** argv)
     frame_bgr->width = decode_context->width;
     frame_bgr->height = decode_context->height;
     if (av_frame_get_buffer(frame_bgr, 0) < 0) {
-        std::cerr << "Cannot alocate SWS frame buffer." << std::endl;
+        std::cerr << "Cannot allocate SWS frame buffer." << std::endl;
         return -1;
     }
 
