@@ -1,5 +1,5 @@
 # make-it-glitch
-Minimal C++ code for generating Glitchy video with FFMPEG.
+Minimal C++ code for generating glitchy video with FFMPEG.
 
 All these features implemented with only ~200 lines of C++ code.
 - Support most video files
