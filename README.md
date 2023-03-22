@@ -6,7 +6,7 @@ Minimal C++ code for generating glitchy video with FFMPEG.
 All these features implemented with only ~200 lines of C++ code.
 - Support most video files
 - Automatic hardware acceleration
-- Color space conversion
+- Color space conversion: YUV to RGB
 
 Thanks for FFMPEG!
 
