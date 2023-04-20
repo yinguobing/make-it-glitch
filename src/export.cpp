@@ -184,15 +184,20 @@ int main(int argc, char** argv)
     // How to mark the glitchy frame?
     bool glitchy = false;
     int frame_count = 0;
-
+    int save_duration = 25;
     // Finally, loop the frames.
     while (av_read_frame(format_context, packet) >= 0) {
+        frame_count++;
+
         // Is this packet valid?
         if (packet->stream_index == stream_index) {
 
             // Touch the data, to make it glitch!
             std::uniform_real_distribution<> odd(0, 1);
-            glitchy = odd(gen) > 0.5 ? true : false;
+            if (odd(gen) > 0.9) {
+                continue;
+            }
+            glitchy = odd(gen) > 0.3 ? true : false;
             if (glitchy) {
                 std::uniform_int_distribution<> corruption_count(1, 6);
                 std::uniform_int_distribution<> start(0, packet->size - 1);
@@ -262,19 +267,20 @@ int main(int argc, char** argv)
                     }
 
                     // Use OpenCV for showing the image (and save the image in JPEG format):
-                    cv::Mat cv_bgr(frame_bgr->height, frame_bgr->width, CV_8UC3, frame_bgr->data[0], frame_bgr->linesize[0]);
-                    cv::imshow("preview", cv_bgr);
-                    if (cv::waitKey(1) == 27)
-                        break;
-                    std::string filename { "frame_" };
-                    filename.append(std::to_string(frame_count)).append(".jpg");
-                    std::string save_path;
-                    if (glitchy) {
-                        save_path = (export_dir / glitch).append(filename).string();
-                        cv::imwrite(save_path, cv_bgr);
+                    if (frame_count % save_duration == 0) {
+                        cv::Mat cv_bgr(frame_bgr->height, frame_bgr->width, CV_8UC3, frame_bgr->data[0], frame_bgr->linesize[0]);
+                        cv::imshow("preview", cv_bgr);
+                        if (cv::waitKey(1) == 27)
+                            break;
+                        std::string filename { "frame_" };
+                        filename.append(std::to_string(frame_count)).append(".jpg");
+                        std::string save_path;
+                        if (glitchy) {
+                            save_path = (export_dir / glitch).append(filename).string();
+                            cv::imwrite(save_path, cv_bgr);
+                        }
                     }
                 }
-                frame_count++;
             }
         }
         av_packet_unref(packet);
