@@ -178,15 +178,21 @@ int main(int argc, char** argv)
         if (packet->stream_index == stream_index) {
 
             // Touch the data, to make it glitch!
-            std::uniform_int_distribution<> location(0, packet->size - 1);
-            std::uniform_int_distribution<> val(0, 8);
-            int a = location(gen);
-            int b = location(gen);
-            int start = std::min(a, b);
-            int end = std::max(a, b);
-            end = start == end ? ++end : end;
-            for (size_t i = start; i < end; i++) {
-                packet->data[i] = val(gen);
+            std::uniform_real_distribution<> odd(0, 1);
+            if (odd(gen) > 0.1) {
+                std::uniform_int_distribution<> corruption_count(1, 6);
+                std::uniform_int_distribution<> start(0, packet->size - 1);
+                std::uniform_int_distribution<> length(1, 256);
+                std::uniform_int_distribution<> val(0, 255);
+                int random_start = start(gen);
+                for (size_t i = 0, count = corruption_count(gen); i < count; i++) {
+                    for (int j = 0, random_length = length(gen); j < random_length; j++) {
+                        if (random_start + j >= packet->size) {
+                            break;
+                        }
+                        packet->data[random_start + j] = val(gen);
+                    }
+                }
             }
 
             // Send it to decoding
