@@ -178,8 +178,16 @@ int main(int argc, char** argv)
         if (packet->stream_index == stream_index) {
 
             // Touch the data, to make it glitch!
-            std::uniform_int_distribution<> distrib(0, packet->size);
-            packet->data[distrib(gen)] = 0;
+            std::uniform_int_distribution<> location(0, packet->size - 1);
+            std::uniform_int_distribution<> val(0, 8);
+            int a = location(gen);
+            int b = location(gen);
+            int start = std::min(a, b);
+            int end = std::max(a, b);
+            end = start == end ? ++end : end;
+            for (size_t i = start; i < end; i++) {
+                packet->data[i] = val(gen);
+            }
 
             // Send it to decoding
             ret = avcodec_send_packet(decode_context, packet);
