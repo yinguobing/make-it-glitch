@@ -19,5 +19,9 @@ pkg_check_modules(
 find_package(OpenCV REQUIRED)
 
 add_executable(glitch src/main.cpp)
-target_include_directories(${PROJECT_NAME} PRIVATE ${OpenCV_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PkgConfig::LIBAV ${OpenCV_LIBS})
+target_include_directories(glitch PRIVATE ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(glitch PkgConfig::LIBAV ${OpenCV_LIBS})
+
+add_executable(export-glitch src/export.cpp)
+target_include_directories(export-glitch PRIVATE ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(export-glitch PkgConfig::LIBAV ${OpenCV_LIBS})
