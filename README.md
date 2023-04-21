@@ -3,12 +3,10 @@ Minimal C++ code for generating glitchy video with FFMPEG.
 
 ![Sample - The Wandering Earth 2](doc/wandering_earch_2.jpg)
 
-All these features implemented with only ~200 lines of C++ code.
+All these features implemented with FFMPEG!
 - Support most video files
 - Automatic hardware acceleration
 - Color space conversion: YUV to RGB
-
-Thanks for FFMPEG!
 
 ## Getting Started
 
@@ -18,7 +16,7 @@ These instructions will get you a copy of the project up and running on your loc
 You will need these libraries for development:
 - FFMPEG 4.3.3 or later
 - OpenCV 4.5.4 or later, if you want any image postprocessing
-- CUDA 11.8, only if you want NVDEC hardware accelerated decoding
+- CUDA 11.8, only if you want CUDA NVDEC hardware accelerated decoding
 - CMake 3.16, or later
 
 ### Build
@@ -35,15 +33,18 @@ cmake ..
 make
 ```
 
-Executable file `glitch` will be found in the `build` directory.
+The executable file `glitch` will be found in the `build` directory.
 
 ### Run
 From the `build` directory, run
 ```bash
-./glitch your-video-file.mp4
+./glitch your-video-file.mp4 output-image-dir
 ```
 
 Enjoy!
+
+### Modify
+In case you want to know how this is made, the essential code could be found in `essential.cpp`.
 
 ## License
 See the LICENSE file for details.

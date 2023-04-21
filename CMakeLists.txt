@@ -18,10 +18,10 @@ pkg_check_modules(
 
 find_package(OpenCV REQUIRED)
 
-add_executable(glitch src/main.cpp)
+add_executable(glitch src/main.cpp src/video_decoder.cpp)
 target_include_directories(glitch PRIVATE ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(glitch PkgConfig::LIBAV ${OpenCV_LIBS})
 
-add_executable(export-glitch src/export-glitch.cpp src/video_decoder.cpp)
-target_include_directories(export-glitch PRIVATE ${OpenCV_INCLUDE_DIRS})
-target_link_libraries(export-glitch PkgConfig::LIBAV ${OpenCV_LIBS})
+add_executable(essential src/essential.cpp)
+target_include_directories(essential PRIVATE ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(essential PkgConfig::LIBAV ${OpenCV_LIBS})
