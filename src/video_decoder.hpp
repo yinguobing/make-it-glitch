@@ -16,6 +16,7 @@ extern "C" {
 #include "libswscale/swscale.h"
 }
 
+/// @brief A simple wrapper for video decoding.
 class VideoDecoder {
 private:
     // Contexts
@@ -24,7 +25,7 @@ private:
     SwsContext* ctx_sws = nullptr;
 
     // Decoder
-    AVCodec* decoder = nullptr;
+    const AVCodec* decoder = nullptr;
     AVStream* stream = nullptr;
     int stream_index;
 
@@ -55,19 +56,37 @@ private:
 public:
     VideoDecoder(const std::string url, AVHWDeviceType hw_acc = AV_HWDEVICE_TYPE_NONE);
     ~VideoDecoder();
+
+    /// @brief check if the decoder was successfully initialized.
+    /// @return true if the decoder is valid, else false.
     bool is_valid();
+
+    /// @brief Check if the decoder is hardware accelerated.
+    /// @return true if accelerated, else false.
     bool is_accelerated();
+
+    /// @brief Get the frame size.
+    /// @return a std::pair of <width, height>
     std::pair<int, int> get_frame_dims();
+
+    /// @brief Get the frame's step size. This is used for constructing OpenCV Mat.
+    /// @return the step.
     int get_frame_steps();
+
+    /// @brief Touch the decoding packet data, randomly.
     void random_touch();
 
-    // List available hardware accelerators.
+    /// @brief List available hardware accelerators.
+    /// @return a vector of accelerator names.
     std::vector<std::string> list_hw_accelerators();
 
-    // Get the frame buffer.
+    /// @brief  Get the BGR frame buffer.
+    /// @return the pointer of pixel data.
     uint8_t* get_buffer();
 
-    // Use this to push the decoded frame data to buf.
+    /// @brief Read a frame to buf.
+    /// @param touch if true, the packet data will be touched randomly.
+    /// @return 0 if success, -11 if try again is required, other negative for errors.
     int read(bool touch = false);
 };
 #endif // VIDEO_DECODER_HPP
