@@ -23,17 +23,20 @@ int main(int argc, char** argv)
     char* filename = argv[1];
     VideoDecoder decoder { std::string(filename), AV_HWDEVICE_TYPE_CUDA };
 
+    // Check if the decoder is valid
     std::cout << "Supported accelerator: ";
     for (auto&& acc : decoder.list_hw_accelerators())
         std::cout << acc << " " << std::endl;
     std::cout << "Valid: " << decoder.is_valid() << std::endl;
     std::cout << "Accelerated: " << decoder.is_accelerated() << std::endl;
 
+    // Prepare memory space for frames
     uint8_t* buffer = decoder.get_buffer();
     auto [width, height] = decoder.get_frame_dims();
     std::cout << "Width: " << width << " height: " << height << std::endl;
-
     cv::Mat bgr(height, width, CV_8UC3, buffer, decoder.get_frame_steps());
+
+    // Loop the video stream for frames. Press `ESC` to stop.
     int ret = 0, frame_count = 0;
     while (ret == 0 or ret == AVERROR(EAGAIN)) {
         ret = decoder.read(true);
