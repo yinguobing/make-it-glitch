@@ -22,6 +22,6 @@ add_executable(glitch src/main.cpp)
 target_include_directories(glitch PRIVATE ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(glitch PkgConfig::LIBAV ${OpenCV_LIBS})
 
-add_executable(export-glitch src/export.cpp)
+add_executable(export-glitch src/export-glitch.cpp src/video_decoder.cpp)
 target_include_directories(export-glitch PRIVATE ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(export-glitch PkgConfig::LIBAV ${OpenCV_LIBS})

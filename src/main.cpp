@@ -219,6 +219,9 @@ int main(int argc, char** argv)
                         frame_yuv = frame_raw;
                     }
 
+                    std::cout << "yuv " << frame_yuv->format << std::endl;
+                    std::cout << "raw " << frame_raw->format << std::endl;
+
                     // Convert from input format to BGR:
                     cached_ctx = sws_getCachedContext(sws_ctx,
                         decode_context->width,
