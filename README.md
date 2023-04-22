@@ -18,6 +18,7 @@ You will need these libraries for development:
 - OpenCV 4.5.4 or later, if you want any image postprocessing
 - CUDA 11.8, only if you want CUDA NVDEC hardware accelerated decoding
 - CMake 3.16, or later
+- A C++ 17 compatible compiler
 
 ### Build
 First, clone the code.
