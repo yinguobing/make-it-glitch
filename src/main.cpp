@@ -7,13 +7,16 @@
 int main(int argc, char** argv)
 {
     // Safety check, always!
-    if (argc != 3) {
-        std::cout << "Usage:\n"
-                  << argv[0] << " <your-video-file> <export-dir>" << std::endl;
+    if (argc != 3 and argc != 4) {
+        std::cout << "Usage:\n    "
+                  << argv[0] << " <your-video-file> <export-dir> [no-touching]\n"
+                  << "More than 4 args will trigger the exporting without any glitch(the original frame)."
+                  << std::endl;
         exit(1);
     }
 
     // Create directories for exporting images.
+    std::filesystem::path video_file { argv[1] };
     std::filesystem::path export_dir { argv[2] };
     std::filesystem::path glitch_dir { "glitchy" };
     std::filesystem::create_directories(export_dir / glitch_dir);
@@ -38,9 +41,10 @@ int main(int argc, char** argv)
 
     // Loop the video stream for frames. Press `ESC` to stop.
     int ret = 0, frame_count = 0, frame_skip = 25;
+    bool will_be_touched = argc == 3;
     while (ret == 0 or ret == AVERROR(EAGAIN)) {
-        ret = decoder.read(true);
-        std::string filename = std::string("frame_").append(std::to_string(++frame_count)).append(".jpg");
+        ret = decoder.read(will_be_touched);
+        std::string filename = video_file.stem().string().append("-").append(std::to_string(++frame_count)).append(".jpg");
         if (frame_count % frame_skip == 0)
             cv::imwrite((export_dir / glitch_dir).append(filename).string(), bgr);
         cv::imshow("preview", bgr);
