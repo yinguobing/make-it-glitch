@@ -18,9 +18,8 @@ int main(int argc, char** argv)
     // Create directories for exporting images.
     std::filesystem::path video_file { argv[1] };
     std::filesystem::path export_dir { argv[2] };
-    std::filesystem::path glitch_dir { "glitchy" };
-    std::filesystem::create_directories(export_dir / glitch_dir);
-    std::cout << "Glitchy images will be saved in " << (export_dir / glitch_dir).string() << std::endl;
+    std::filesystem::create_directories(export_dir);
+    std::cout << "Glitchy images will be saved in " << export_dir.string() << std::endl;
 
     // Init the decoder
     char* filename = argv[1];
@@ -44,9 +43,11 @@ int main(int argc, char** argv)
     bool will_be_touched = argc == 3;
     while (ret == 0 or ret == AVERROR(EAGAIN)) {
         ret = decoder.read(will_be_touched);
-        std::string filename = video_file.stem().string().append("-").append(std::to_string(++frame_count)).append(".jpg");
-        if (frame_count % frame_skip == 0)
-            cv::imwrite((export_dir / glitch_dir).append(filename).string(), bgr);
+        if (frame_count % frame_skip == 0) {
+            std::string filename = video_file.stem().string().append("-").append(std::to_string(++frame_count)).append(".jpg");
+            auto img_path = export_dir / std::filesystem::path { filename };
+            cv::imwrite(img_path.string(), bgr);
+        }
         cv::imshow("preview", bgr);
         if (cv::waitKey(1) == 27)
             break;
