@@ -37,11 +37,12 @@ int main(int argc, char** argv)
     cv::Mat bgr(height, width, CV_8UC3, buffer, decoder.get_frame_steps());
 
     // Loop the video stream for frames. Press `ESC` to stop.
-    int ret = 0, frame_count = 0;
+    int ret = 0, frame_count = 0, frame_skip = 25;
     while (ret == 0 or ret == AVERROR(EAGAIN)) {
         ret = decoder.read(true);
         std::string filename = std::string("frame_").append(std::to_string(++frame_count)).append(".jpg");
-        cv::imwrite((export_dir / glitch_dir).append(filename).string(), bgr);
+        if (frame_count % frame_skip == 0)
+            cv::imwrite((export_dir / glitch_dir).append(filename).string(), bgr);
         cv::imshow("preview", bgr);
         if (cv::waitKey(1) == 27)
             break;
