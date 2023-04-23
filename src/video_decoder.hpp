@@ -25,7 +25,7 @@ private:
     SwsContext* ctx_sws = nullptr;
 
     // Decoder
-    const AVCodec* decoder = nullptr;
+    AVCodec* decoder = nullptr;
     AVStream* stream = nullptr;
     int stream_index;
 
