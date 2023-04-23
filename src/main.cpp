@@ -42,9 +42,10 @@ int main(int argc, char** argv)
     int ret = 0, frame_count = 0, frame_skip = 25;
     bool will_be_touched = argc == 3;
     while (ret == 0 or ret == AVERROR(EAGAIN)) {
+        frame_count++;
         ret = decoder.read(will_be_touched);
         if (frame_count % frame_skip == 0) {
-            std::string filename = video_file.stem().string().append("-").append(std::to_string(++frame_count)).append(".jpg");
+            std::string filename = video_file.stem().string().append("-").append(std::to_string(frame_count)).append(".jpg");
             auto img_path = export_dir / std::filesystem::path { filename };
             cv::imwrite(img_path.string(), bgr);
         }
