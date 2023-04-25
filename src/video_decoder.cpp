@@ -160,7 +160,7 @@ void VideoDecoder::random_touch()
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> corruption_count(1, 6);
     std::uniform_int_distribution<> start(0, packet->size - 1);
-    std::uniform_int_distribution<> length(1, 256);
+    std::uniform_int_distribution<> length(1, packet->size - 1);
     std::uniform_int_distribution<> val(0, 255);
     int random_start = start(gen);
     for (size_t i = 0, count = corruption_count(gen); i < count; i++) {
@@ -226,6 +226,7 @@ std::pair<int, int> VideoDecoder::get_frame_dims()
     dims.second = this->ctx_decode->height;
     return dims;
 }
+
 int VideoDecoder::get_frame_steps()
 {
     return frame_bgr->linesize[0];
