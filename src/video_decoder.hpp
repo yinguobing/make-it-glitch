@@ -5,8 +5,12 @@
 #include <random>
 #include <string>
 
-#include "opencv2/highgui.hpp"
+#include "config.h"
 #include "opencv2/opencv.hpp"
+
+#ifdef WITH_GUI
+#include "opencv2/highgui.hpp"
+#endif
 
 extern "C" {
 #include "libavcodec/avcodec.h"

@@ -4,8 +4,11 @@
 #include <random>
 #include <string>
 
-#include <opencv2/highgui.hpp>
+#include "config.h"
 #include <opencv2/opencv.hpp>
+#ifdef WITH_GUI
+#include "opencv2/highgui.hpp"
+#endif
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -249,9 +252,11 @@ int main(int argc, char** argv)
 
                     // Use OpenCV for showing the image (and save the image in JPEG format):
                     cv::Mat cv_bgr(frame_bgr->height, frame_bgr->width, CV_8UC3, frame_bgr->data[0], frame_bgr->linesize[0]);
+#ifdef WITH_GUI
                     cv::imshow("preview", cv_bgr);
                     if (cv::waitKey(1) == 27)
                         break;
+#endif
                 }
             }
         }

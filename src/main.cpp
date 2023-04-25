@@ -49,9 +49,11 @@ int main(int argc, char** argv)
             auto img_path = export_dir / std::filesystem::path { filename };
             cv::imwrite(img_path.string(), bgr);
         }
-        // cv::imshow("preview", bgr);
-        // if (cv::waitKey(1) == 27)
-        //     break;
+#ifdef WITH_GUI
+        cv::imshow("preview", bgr);
+        if (cv::waitKey(1) == 27)
+            break;
+#endif
     }
 
     return 0;
