@@ -4,6 +4,24 @@
 
 #include "video_decoder.hpp"
 
+// @brief Center crop the image after resizing
+cv::Mat center_crop_after_resize(cv::Mat& image, int width, int height)
+{
+    int w = image.cols, h = image.rows;
+    float scale = std::max(height / (float)h, width / (float)w);
+    cv::Mat out;
+    cv::resize(image, out, cv::Size(0, 0), scale, scale);
+    int _h = out.rows, _w = out.cols;
+    int x = 0, y = 0;
+    if (_h < _w)
+        x += int((_w - width) / 2);
+    else
+        y += int((_h - height) / 2);
+    cv::Rect roi { x, y, width, height };
+    out = out(roi);
+    return out;
+}
+
 int main(int argc, char** argv)
 {
     // Safety check, always!
@@ -44,13 +62,14 @@ int main(int argc, char** argv)
     while (ret == 0 or ret == AVERROR(EAGAIN)) {
         frame_count++;
         ret = decoder.read(will_be_touched);
+        cv::Mat dump = center_crop_after_resize(bgr, 320, 320);
         if (frame_count % frame_skip == 0) {
             std::string filename = video_file.stem().string().append("-").append(std::to_string(frame_count)).append(".jpg");
             auto img_path = export_dir / std::filesystem::path { filename };
-            cv::imwrite(img_path.string(), bgr);
+            cv::imwrite(img_path.string(), dump);
         }
 #ifdef WITH_GUI
-        cv::imshow("preview", bgr);
+        cv::imshow("preview", dump);
         if (cv::waitKey(1) == 27)
             break;
 #endif
