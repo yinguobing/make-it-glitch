@@ -1,4 +1,6 @@
 # make-it-glitch
+[![CMake](https://github.com/yinguobing/make-it-glitch/actions/workflows/cmake.yml/badge.svg?branch=main)](https://github.com/yinguobing/make-it-glitch/actions/workflows/cmake.yml)
+
 Minimal C++ code for generating glitchy video with FFMPEG.
 
 ![Sample - The Wandering Earth 2](doc/wandering_earch_2.jpg)
