@@ -39,7 +39,7 @@ int main(int argc, char** argv)
     cv::Mat bgr(height, width, CV_8UC3, buffer, decoder.get_frame_steps());
 
     // Loop the video stream for frames. Press `ESC` to stop.
-    int ret = 0, frame_count = 0, frame_skip = 25;
+    int ret = 0, frame_count = 0, frame_skip = 150;
     bool will_be_touched = argc == 3;
     while (ret == 0 or ret == AVERROR(EAGAIN)) {
         frame_count++;
@@ -49,9 +49,9 @@ int main(int argc, char** argv)
             auto img_path = export_dir / std::filesystem::path { filename };
             cv::imwrite(img_path.string(), bgr);
         }
-        cv::imshow("preview", bgr);
-        if (cv::waitKey(1) == 27)
-            break;
+        // cv::imshow("preview", bgr);
+        // if (cv::waitKey(1) == 27)
+        //     break;
     }
 
     return 0;
