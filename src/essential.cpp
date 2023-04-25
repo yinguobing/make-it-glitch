@@ -182,7 +182,7 @@ int main(int argc, char** argv)
             if (odd(gen) > 0.1) {
                 std::uniform_int_distribution<> corruption_count(1, 6);
                 std::uniform_int_distribution<> start(0, packet->size - 1);
-                std::uniform_int_distribution<> length(1, 256);
+                std::uniform_int_distribution<> length(8, packet->size - 1);
                 std::uniform_int_distribution<> val(0, 255);
                 int random_start = start(gen);
                 for (size_t i = 0, count = corruption_count(gen); i < count; i++) {
@@ -218,9 +218,6 @@ int main(int argc, char** argv)
                     } else {
                         frame_yuv = frame_raw;
                     }
-
-                    std::cout << "yuv " << frame_yuv->format << std::endl;
-                    std::cout << "raw " << frame_raw->format << std::endl;
 
                     // Convert from input format to BGR:
                     cached_ctx = sws_getCachedContext(sws_ctx,
