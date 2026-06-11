@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>make-it-glitch — 视频故障艺术生成器</title>
+<style>
+  /* =================================================================
+     CUSTOM PROPERTIES
+     ================================================================= */
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --text: #cccccc;
+    --text-dim: #666666;
+    --accent-cyan: #00f0ff;
+    --accent-magenta: #ff00e5;
+    --accent-green: #39ff14;
+    --accent-red: #ff3333;
+    --accent-yellow: #ffe600;
+    --border: #222222;
+    --font-mono: 'Cascadia Code', 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Source Code Pro', 'Consolas', monospace;
+    --font-sans: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', sans-serif;
+    --scanline-opacity: 0.03;
+  }
+
+  /* =================================================================
+     RESET & BASE
+     ================================================================= */
+  *, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    font-size: 16px;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    line-height: 1.7;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* =================================================================
+     ATMOSPHERIC LAYERS — scanlines, noise, vignette
+     ================================================================= */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.03) 2px,
+      rgba(0, 0, 0, 0.03) 4px
+    );
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9998;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0, 0, 0, 0.6) 100%);
+  }
+
+  .noise-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9997;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* =================================================================
+     TYPOGRAPHY
+     ================================================================= */
+  h1, h2, h3, h4 {
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  a {
+    color: var(--accent-cyan);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  a:hover {
+    color: var(--accent-magenta);
+  }
+
+  code, .mono {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+  }
+
+  /* =================================================================
+     LAYOUT
+     ================================================================= */
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  section {
+    padding: 100px 0;
+  }
+
+  /* =================================================================
+     GLITCH TEXT COMPONENT
+     ================================================================= */
+  .glitch-text {
+    position: relative;
+    display: inline-block;
+    color: var(--accent-cyan);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .glitch-text::before,
+  .glitch-text::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.6;
+  }
+
+  .glitch-text::before {
+    color: var(--accent-magenta);
+    animation: glitch-shift-before 2.5s infinite linear alternate-reverse;
+    clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+  }
+
+  .glitch-text::after {
+    color: var(--accent-cyan);
+    animation: glitch-shift-after 3s infinite linear alternate-reverse;
+    clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
+  }
+
+  @keyframes glitch-shift-before {
+    0%, 90%, 100% { transform: none; }
+    91% { transform: translate(-3px, 2px); }
+    93% { transform: translate(3px, -1px); }
+    95% { transform: translate(-2px, -2px); }
+    97% { transform: translate(4px, 1px); }
+  }
+
+  @keyframes glitch-shift-after {
+    0%, 85%, 100% { transform: none; }
+    86% { transform: translate(2px, -2px); }
+    88% { transform: translate(-4px, 1px); }
+    90% { transform: translate(1px, 3px); }
+    92% { transform: translate(-3px, -1px); }
+  }
+
+  /* =================================================================
+     HERO
+     ================================================================= */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    position: relative;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .hero .container {
+    padding-top: 60px;
+    padding-bottom: 60px;
+  }
+
+  .hero-tag {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--accent-green);
+    border: 1px solid var(--accent-green);
+    padding: 4px 12px;
+    margin-bottom: 28px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0;
+    animation: fade-slide-up 0.6s 0.1s forwards;
+  }
+
+  .hero-title {
+    font-size: clamp(3rem, 7vw, 6rem);
+    font-family: var(--font-mono);
+    font-weight: 900;
+    line-height: 1.05;
+    margin-bottom: 24px;
+    color: #fff;
+    opacity: 0;
+    animation: fade-slide-up 0.6s 0.25s forwards;
+  }
+
+  .hero-title .glitch-text {
+    font-size: inherit;
+    color: var(--accent-cyan);
+  }
+
+  .hero-subtitle {
+    font-size: clamp(1.1rem, 2vw, 1.35rem);
+    color: var(--text-dim);
+    max-width: 540px;
+    margin-bottom: 40px;
+    line-height: 1.8;
+    opacity: 0;
+    animation: fade-slide-up 0.6s 0.4s forwards;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    opacity: 0;
+    animation: fade-slide-up 0.6s 0.55s forwards;
+  }
+
+  /* =================================================================
+     BUTTONS
+     ================================================================= */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    padding: 14px 28px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-primary {
+    background: var(--accent-cyan);
+    color: #000;
+    border: none;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  }
+
+  .btn-primary:hover {
+    background: #33f5ff;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0, 240, 255, 0.25);
+    color: #000;
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--accent-cyan);
+    border: 1px solid var(--accent-cyan);
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  }
+
+  .btn-secondary:hover {
+    background: rgba(0, 240, 255, 0.08);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0, 240, 255, 0.12);
+    color: var(--accent-cyan);
+  }
+
+  /* =================================================================
+     HERO DECORATIVE — glitch blocks
+     ================================================================= */
+  .hero-glitch-blocks {
+    position: absolute;
+    right: -60px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 320px;
+    height: 420px;
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  .glitch-block {
+    position: absolute;
+    background: var(--accent-cyan);
+    opacity: 0.06;
+  }
+
+  .glitch-block:nth-child(1) {
+    width: 200px;
+    height: 6px;
+    top: 40px;
+    left: 40px;
+    animation: block-shift 4s infinite;
+  }
+  .glitch-block:nth-child(2) {
+    width: 280px;
+    height: 4px;
+    top: 120px;
+    left: 0;
+    animation: block-shift 5s infinite 0.5s;
+  }
+  .glitch-block:nth-child(3) {
+    width: 160px;
+    height: 8px;
+    top: 200px;
+    left: 60px;
+    animation: block-shift 3.5s infinite 1s;
+  }
+  .glitch-block:nth-child(4) {
+    width: 240px;
+    height: 3px;
+    top: 280px;
+    left: 20px;
+    animation: block-shift 4.5s infinite 0.3s;
+  }
+  .glitch-block:nth-child(5) {
+    width: 120px;
+    height: 5px;
+    top: 340px;
+    left: 100px;
+    animation: block-shift 3s infinite 1.5s;
+  }
+  .glitch-block:nth-child(6) {
+    width: 180px;
+    height: 2px;
+    top: 80px;
+    left: 20px;
+    background: var(--accent-magenta);
+    animation: block-shift 5.5s infinite 0.7s;
+  }
+  .glitch-block:nth-child(7) {
+    width: 100px;
+    height: 7px;
+    top: 250px;
+    left: 90px;
+    background: var(--accent-magenta);
+    animation: block-shift 3.8s infinite 1.8s;
+  }
+
+  @keyframes block-shift {
+    0%, 90%, 100% { transform: translateX(0); opacity: 0.06; }
+    91% { transform: translateX(30px); opacity: 0.15; }
+    93% { transform: translateX(-20px); opacity: 0.08; }
+    95% { transform: translateX(15px); opacity: 0.12; }
+    97% { transform: translateX(-10px); opacity: 0.04; }
+  }
+
+  /* =================================================================
+     CORRUPTED LINE DECORATION
+     ================================================================= */
+  .corrupted-line {
+    width: 100%;
+    height: 1px;
+    background: var(--border);
+    position: relative;
+    margin: 0;
+    overflow: visible;
+  }
+
+  .corrupted-line::after {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 60px,
+      var(--accent-cyan) 60px,
+      rgba(0, 240, 255, 0.3) 62px,
+      transparent 62px,
+      transparent 160px,
+      var(--accent-magenta) 160px,
+      rgba(255, 0, 229, 0.2) 161px,
+      transparent 161px,
+      transparent 300px,
+      var(--accent-green) 300px,
+      rgba(57, 255, 20, 0.4) 301px,
+      transparent 301px
+    );
+    animation: corrupt-sweep 8s linear infinite;
+  }
+
+  @keyframes corrupt-sweep {
+    0% { background-position: 0 0; }
+    100% { background-position: 500px 0; }
+  }
+
+  /* =================================================================
+     SECTION HEADERS
+     ================================================================= */
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    color: var(--accent-green);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .section-title {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 900;
+    color: #fff;
+    margin-bottom: 48px;
+    font-family: var(--font-mono);
+    letter-spacing: -0.02em;
+  }
+
+  .section-title mark {
+    background: transparent;
+    color: var(--accent-cyan);
+  }
+
+  /* =================================================================
+     FEATURES GRID
+     ================================================================= */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+
+  .feature-card {
+    background: var(--surface);
+    padding: 40px 32px;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s;
+  }
+
+  .feature-card:hover {
+    background: #181818;
+  }
+
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: var(--accent-cyan);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s;
+  }
+
+  .feature-card:hover::before {
+    transform: scaleX(1);
+  }
+
+  .feature-index {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--accent-green);
+    letter-spacing: 0.15em;
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  .feature-card h3 {
+    font-size: 1.2rem;
+    color: #fff;
+    margin-bottom: 10px;
+    font-family: var(--font-mono);
+    letter-spacing: 0.03em;
+  }
+
+  .feature-card p {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    line-height: 1.7;
+  }
+
+  /* =================================================================
+     CODE BLOCK (HOW IT WORKS)
+     ================================================================= */
+  .code-showcase {
+    background: #0d0d0d;
+    border: 1px solid var(--border);
+    padding: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .code-showcase::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 32px;
+    height: 100%;
+    background: rgba(57, 255, 20, 0.03);
+    border-right: 1px solid rgba(57, 255, 20, 0.1);
+  }
+
+  .code-showcase pre {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    line-height: 1.8;
+    color: var(--text);
+    overflow-x: auto;
+    margin: 0;
+    padding-left: 8px;
+  }
+
+  .code-comment { color: #555555; }
+  .code-func { color: var(--accent-cyan); }
+  .code-str { color: var(--accent-yellow); }
+  .code-keyword { color: var(--accent-magenta); }
+  .code-num { color: var(--accent-green); }
+  .code-op { color: #888888; }
+
+  /* =================================================================
+     PIPELINE VISUAL
+     ================================================================= */
+  .pipeline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    margin-top: 40px;
+  }
+
+  .pipeline-step {
+    flex: 1 1 180px;
+    background: var(--surface);
+    padding: 28px 24px;
+    text-align: center;
+    border: 1px solid var(--border);
+    margin-left: -1px;
+    position: relative;
+    transition: background 0.3s;
+  }
+
+  .pipeline-step:first-child {
+    margin-left: 0;
+  }
+
+  .pipeline-step:hover {
+    background: #181818;
+  }
+
+  .pipeline-step .step-arrow {
+    position: absolute;
+    right: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--accent-cyan);
+    font-family: var(--font-mono);
+    font-size: 1.2rem;
+    z-index: 2;
+  }
+
+  .pipeline-step:last-child .step-arrow {
+    display: none;
+  }
+
+  .pipeline-icon {
+    font-family: var(--font-mono);
+    font-size: 1.8rem;
+    color: var(--accent-magenta);
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .pipeline-step h4 {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+
+  .pipeline-step p {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  /* =================================================================
+     COMMANDS (GET STARTED)
+     ================================================================= */
+  .command-list {
+    counter-reset: cmd;
+  }
+
+  .command-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+    padding: 28px 0;
+    border-bottom: 1px solid var(--border);
+    counter-increment: cmd;
+  }
+
+  .command-item:last-child {
+    border-bottom: none;
+  }
+
+  .command-num {
+    font-family: var(--font-mono);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--accent-green);
+    min-width: 40px;
+    flex-shrink: 0;
+  }
+
+  .command-content {
+    flex: 1;
+  }
+
+  .command-content h4 {
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+
+  .command-content p {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    line-height: 1.7;
+  }
+
+  .command-shell {
+    display: block;
+    background: #0d0d0d;
+    color: var(--accent-cyan);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    padding: 14px 20px;
+    border-left: 2px solid var(--accent-green);
+    border-radius: 0 4px 4px 0;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .command-shell .prompt {
+    color: var(--accent-green);
+    user-select: none;
+  }
+
+  /* =================================================================
+     STATS BAR
+     ================================================================= */
+  .stats-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+
+  .stat-item {
+    flex: 1 1 160px;
+    background: var(--surface);
+    padding: 36px 28px;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-family: var(--font-mono);
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: var(--accent-cyan);
+    display: block;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    margin-top: 6px;
+    display: block;
+  }
+
+  /* =================================================================
+     FOOTER
+     ================================================================= */
+  .footer {
+    padding: 60px 0;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 0.8rem;
+  }
+
+  .footer-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 40px;
+  }
+
+  .footer-brand {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: #fff;
+    font-size: 1rem;
+    margin-bottom: 8px;
+  }
+
+  .footer a {
+    color: var(--text-dim);
+  }
+
+  .footer a:hover {
+    color: var(--accent-cyan);
+  }
+
+  /* =================================================================
+     ANIMATIONS — shared
+     ================================================================= */
+  @keyframes fade-slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* =================================================================
+     SCROLL REVEAL
+     ================================================================= */
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* =================================================================
+     MOBILE TEXT SWAP BLOCK (glitch warning)
+     ================================================================= */
+  .glitch-warning {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--accent-yellow);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 12px 0;
+    opacity: 0.7;
+  }
+
+  .glitch-warning .blink {
+    animation: blink 1.2s step-end infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* =================================================================
+     RESPONSIVE
+     ================================================================= */
+  @media (max-width: 768px) {
+    section {
+      padding: 60px 0;
+    }
+
+    .hero {
+      min-height: auto;
+    }
+
+    .hero-glitch-blocks {
+      display: none;
+    }
+
+    .hero-title {
+      font-size: 2.4rem;
+    }
+
+    .code-showcase {
+      padding: 20px 16px;
+    }
+
+    .code-showcase pre {
+      font-size: 0.7rem;
+    }
+
+    .features-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .pipeline {
+      flex-direction: column;
+    }
+
+    .pipeline-step {
+      margin-left: 0;
+      margin-top: -1px;
+    }
+
+    .pipeline-step .step-arrow {
+      right: 50%;
+      top: auto;
+      bottom: -14px;
+      transform: translateX(50%) rotate(90deg);
+    }
+
+    .command-item {
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 12px 20px;
+      font-size: 0.8rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .hero-title {
+      font-size: 1.8rem;
+    }
+
+    .hero-subtitle {
+      font-size: 1rem;
+    }
+
+    .hero-actions {
+      flex-direction: column;
+    }
+
+    .btn {
+      justify-content: center;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="noise-overlay" aria-hidden="true"></div>
+
+<!-- =================================================================
+     HERO
+     ================================================================= -->
+<section class="hero">
+  <div class="container">
+    <span class="hero-tag">Open Source / C++ / FFMPEG</span>
+    <h1 class="hero-title">
+      用代码制造<br>
+      <span class="glitch-text" data-text="数字故障艺术">数字故障艺术</span>
+    </h1>
+    <p class="hero-subtitle">
+      一个极简的 C++ 工具，通过随机破坏视频压缩数据，
+      生成独特而迷人的故障风格画面。无需任何图像软件，纯代码驱动。
+    </p>
+    <div class="hero-actions">
+      <a href="https://github.com/yinguobing/make-it-glitch" class="btn btn-primary" target="_blank" rel="noopener">
+        GitHub
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7M7 7h10v10"/></svg>
+      </a>
+      <a href="#get-started" class="btn btn-secondary">
+        快速开始
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 15l-7-7-7 7"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <div class="hero-glitch-blocks" aria-hidden="true">
+    <div class="glitch-block"></div>
+    <div class="glitch-block"></div>
+    <div class="glitch-block"></div>
+    <div class="glitch-block"></div>
+    <div class="glitch-block"></div>
+    <div class="glitch-block"></div>
+    <div class="glitch-block"></div>
+  </div>
+</section>
+
+<div class="corrupted-line" aria-hidden="true"></div>
+
+<!-- =================================================================
+     STATS
+     ================================================================= -->
+<section style="padding: 0;">
+  <div class="container">
+    <div class="stats-bar reveal">
+      <div class="stat-item">
+        <span class="stat-value">&lt;500</span>
+        <span class="stat-label">核心代码行数</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">C++17</span>
+        <span class="stat-label">语言标准</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">GPU</span>
+        <span class="stat-label">硬件加速支持</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">MIT</span>
+        <span class="stat-label">开源协议</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =================================================================
+     FEATURES
+     ================================================================= -->
+<section id="features">
+  <div class="container">
+    <span class="section-label reveal">// 核心功能</span>
+    <h2 class="section-title reveal"><mark>&gt;</mark> 特性一览</h2>
+    <div class="features-grid reveal">
+      <div class="feature-card">
+        <span class="feature-index">[01]</span>
+        <h3>任意视频格式</h3>
+        <p>基于 FFMPEG 构建，支持几乎所有主流视频文件格式，无需预先转码。</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-index">[02]</span>
+        <h3>随机数据破坏</h3>
+        <p>使用 Mersenne Twister 算法在视频压缩数据中注入随机噪声，每次运行都会产生独一无二的视觉结果。</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-index">[03]</span>
+        <h3>硬件加速解码</h3>
+        <p>自动检测并启用 CUDA NVDEC 等硬件解码器，极大提升处理速度。</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-index">[04]</span>
+        <h3>色彩空间转换</h3>
+        <p>内置 YUV 到 RGB/BGR 的色域转换，通过 SWS 上下文保持色彩精度。</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-index">[05]</span>
+        <h3>OpenCV 集成</h3>
+        <p>可选的 OpenCV 支持，提供实时预览窗口和图像后处理能力，包括智能裁剪与缩放。</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-index">[06]</span>
+        <h3>帧采样导出</h3>
+        <p>可配置的帧采样间隔，自动将故障帧导出为 JPEG 图片序列，便于后期使用。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =================================================================
+     HOW IT WORKS
+     ================================================================= -->
+<section id="how-it-works" style="background: #080808;">
+  <div class="container">
+    <span class="section-label reveal">// 工作原理</span>
+    <h2 class="section-title reveal"><mark>&gt;</mark> 处理管线</h2>
+
+    <div class="pipeline reveal">
+      <div class="pipeline-step">
+        <span class="step-arrow">&rarr;</span>
+        <span class="pipeline-icon">[in]</span>
+        <h4>读取视频</h4>
+        <p>解析容器格式，定位视频流</p>
+      </div>
+      <div class="pipeline-step">
+        <span class="step-arrow">&rarr;</span>
+        <span class="pipeline-icon">[*]</span>
+        <h4>破坏数据</h4>
+        <p>随机篡改压缩包数据位</p>
+      </div>
+      <div class="pipeline-step">
+        <span class="step-arrow">&rarr;</span>
+        <span class="pipeline-icon">[hw]</span>
+        <h4>硬件解码</h4>
+        <p>GPU 加速解码被破坏的帧</p>
+      </div>
+      <div class="pipeline-step">
+        <span class="step-arrow">&rarr;</span>
+        <span class="pipeline-icon">[rgb]</span>
+        <h4>色彩转换</h4>
+        <p>YUV 到 BGR 色域精准映射</p>
+      </div>
+      <div class="pipeline-step">
+        <span class="pipeline-icon">[out]</span>
+        <h4>导出图像</h4>
+        <p>裁剪缩放并写入 JPEG 文件</p>
+      </div>
+    </div>
+
+    <div class="code-showcase reveal" style="margin-top: 48px;">
+      <span class="section-label" style="margin-bottom: 16px; display: block;">// 核心破坏逻辑</span>
+      <pre><span class="code-comment">// 使用随机分布决定是否破坏当前帧的数据包</span>
+<span class="code-keyword">std</span>::<span class="code-func">uniform_real_distribution</span>&lt;&gt; <span class="code-func">odd</span>(<span class="code-num">0</span>, <span class="code-num">1</span>);
+<span class="code-keyword">if</span> (odd(gen) &gt; <span class="code-num">0.1</span>) {
+    <span class="code-comment">// 随机选择破坏起点、长度和填充值</span>
+    <span class="code-keyword">std</span>::<span class="code-func">uniform_int_distribution</span>&lt;&gt; <span class="code-func">corruption_count</span>(<span class="code-num">1</span>, <span class="code-num">6</span>);
+    <span class="code-keyword">std</span>::<span class="code-func">uniform_int_distribution</span>&lt;&gt; <span class="code-func">start</span>(<span class="code-num">0</span>, packet-&gt;size - <span class="code-num">1</span>);
+    <span class="code-keyword">std</span>::<span class="code-func">uniform_int_distribution</span>&lt;&gt; <span class="code-func">val</span>(<span class="code-num">0</span>, <span class="code-num">255</span>);
+
+    <span class="code-keyword">int</span> random_start = <span class="code-func">start</span>(gen);
+    <span class="code-keyword">for</span> (<span class="code-keyword">size_t</span> i = <span class="code-num">0</span>, count = <span class="code-func">corruption_count</span>(gen); i &lt; count; i++) {
+        <span class="code-keyword">for</span> (<span class="code-keyword">int</span> j = <span class="code-num">0</span>; j &lt; random_length; j++) {
+            packet-&gt;data[random_start + j] = <span class="code-func">val</span>(gen);  <span class="code-comment">// 注入噪声</span>
+        }
+    }
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- =================================================================
+     GET STARTED
+     ================================================================= -->
+<section id="get-started">
+  <div class="container">
+    <span class="section-label reveal">// 快速开始</span>
+    <h2 class="section-title reveal"><mark>&gt;</mark> 三分钟上手</h2>
+    <div class="glitch-warning reveal">
+      <span class="blink">&#x258C;</span> 需要 FFMPEG 4.3.3+ / OpenCV 4.5.4+ / CMake 3.16+ / C++17
+    </div>
+
+    <div class="command-list reveal">
+      <div class="command-item">
+        <span class="command-num">01</span>
+        <div class="command-content">
+          <h4>克隆仓库</h4>
+          <p>将项目代码克隆到本地开发环境。</p>
+          <code class="command-shell"><span class="prompt">$ </span>git clone https://github.com/yinguobing/make-it-glitch.git</code>
+        </div>
+      </div>
+      <div class="command-item">
+        <span class="command-num">02</span>
+        <div class="command-content">
+          <h4>CMake 构建</h4>
+          <p>使用 CMake 配置并编译项目，生成可执行文件。</p>
+          <code class="command-shell"><span class="prompt">$ </span>cd make-it-glitch &amp;&amp; mkdir build &amp;&amp; cd build
+<span class="prompt">$ </span>cmake ..
+<span class="prompt">$ </span>make</code>
+        </div>
+      </div>
+      <div class="command-item">
+        <span class="command-num">03</span>
+        <div class="command-content">
+          <h4>运行故障处理</h4>
+          <p>指定输入视频和输出目录，开始生成故障艺术画面。</p>
+          <code class="command-shell"><span class="prompt">$ </span>./glitch your-video.mp4 output-images/</code>
+        </div>
+      </div>
+      <div class="command-item">
+        <span class="command-num">04</span>
+        <div class="command-content">
+          <h4>导出原始帧（可选）</h4>
+          <p>添加额外参数可导出未经破坏的原始视频帧作为对比参考。</p>
+          <code class="command-shell"><span class="prompt">$ </span>./glitch your-video.mp4 output-images/ no-touching</code>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =================================================================
+     FOOTER
+     ================================================================= -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <p class="footer-brand">make-it-glitch</p>
+        <p>用代码制造的故障艺术</p>
+      </div>
+      <div>
+        <p>
+          作者 <a href="https://yinguobing.com" target="_blank" rel="noopener">Yin Guobing</a>
+          &nbsp;&#x2022;&nbsp;
+          <a href="https://github.com/yinguobing/make-it-glitch" target="_blank" rel="noopener">GitHub</a>
+          &nbsp;&#x2022;&nbsp;
+          <a href="https://github.com/yinguobing/make-it-glitch/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- =================================================================
+     SCROLL REVEAL
+     ================================================================= -->
+<script>
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
